@@ -1,4 +1,4 @@
-
+from streamlit_autorefresh import st_autorefresh
 import streamlit as st
 import sqlite3
 from wordcloud import WordCloud
@@ -33,42 +33,34 @@ if mode == "user":
             st.success("Thank you for your feedback!")
 
 # ---------------- ADMIN PAGE ----------------
+from streamlit_autorefresh import st_autorefresh
+
 else:
 
     st.title("Live Seminar Feedback")
-    # Generate QR code
-  
+
+    # Auto refresh every 3 seconds
+    st_autorefresh(interval=3000, key="refresh")
+
+    url = "https://feedback-wordcloud-a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
+
     import qrcode
-    url ="https://feedback-wordcloud-a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
     qr = qrcode.make(url)
     qr.save("qr.png")
 
     st.subheader("Students scan this QR code")
     st.image("qr.png", width=300)
-    # Convert to array (important fix)
-    qr_array = np.array(qr)
 
-    st.subheader("Students scan this QR code")
-    st.image(qr_array)
-
-    # Fetch feedback
     cursor.execute("SELECT text FROM feedback")
     data = cursor.fetchall()
 
     words = " ".join([row[0] for row in data])
 
     if words:
-        wordcloud = WordCloud(
-            width=800,
-            height=400,
-            background_color="white"
-        ).generate(words)
+        wordcloud = WordCloud(width=800, height=400, background_color="white").generate(words)
 
         fig, ax = plt.subplots()
         ax.imshow(wordcloud)
         ax.axis("off")
 
         st.pyplot(fig)
-        
-        
-      

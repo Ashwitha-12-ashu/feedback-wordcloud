@@ -1,6 +1,6 @@
-
 streamlit
 wordcloud
 matplotlib
 qrcode
 pillow
+streamlit-autorefresh
