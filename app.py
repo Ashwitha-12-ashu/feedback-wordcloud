@@ -1,29 +1,25 @@
 
 import streamlit as st
-import mysql.connector
-import matplotlib.pyplot as plt
+import sqlite3
 from wordcloud import WordCloud
+import matplotlib.pyplot as plt
 import qrcode
-import time
 
-# ---------- DATABASE CONNECTION ----------
-
-conn = mysql.connector.connect(
-    host="localhost",
-    user="feedbackuser",
-    password="1234",
-    database="feedback_db"
-)
-
+# Database
+conn = sqlite3.connect("feedback.db", check_same_thread=False)
 cursor = conn.cursor()
 
-# ---------- READ URL PARAMETER ----------
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS feedback(
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+text TEXT
+)
+""")
 
-params = st.query_params
-mode = params.get("mode", "admin")
+# Page mode
+mode = st.query_params.get("mode")
 
-# ---------- STUDENT PAGE ----------
-
+# ---------------- USER PAGE ----------------
 if mode == "user":
 
     st.title("Seminar Feedback")
@@ -32,73 +28,40 @@ if mode == "user":
 
     if st.button("Submit"):
 
-        if feedback.strip() == "":
-            st.warning("Please enter feedback")
-
-        else:
-            cursor.execute(
-                "INSERT INTO feedback(text) VALUES (%s)",
-                (feedback,)
-            )
+        if feedback.strip() != "":
+            cursor.execute("INSERT INTO feedback(text) VALUES(?)", (feedback,))
             conn.commit()
+            st.success("Thank you for your feedback!")
 
-            st.success("Thank you! Your feedback was submitted.")
-
-# ---------- ADMIN PAGE ----------
-
+# ---------------- ADMIN PAGE ----------------
 else:
 
     st.title("Live Seminar Feedback")
 
-    # Your laptop IP
-    ip = "192.168.10.34"
+    url = "https://feedback-wordcloud-a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
 
-    link =link = "https://unfeared-pseudoaristocratical-kellye.ngrok-free.dev/?mode=user"
-
-    # ---------- QR CODE ----------
-
-    qr = qrcode.make(link)
-
-    qr.save("qr.png")
+    qr = qrcode.make(url)
 
     st.subheader("Students scan this QR code")
+    st.image(qr)
 
-    st.image("qr.png")
-
-    st.write(link)
-
-    st.divider()
-
-    # ---------- WORD CLOUD ----------
-
-    st.subheader("Live WordCloud")
-
-    cursor.execute("SELECT text FROM feedback ORDER BY id DESC LIMIT 200")
-
+    cursor.execute("SELECT text FROM feedback")
     data = cursor.fetchall()
 
-    text = " ".join([row[0] for row in data])
+    words = " ".join([row[0] for row in data])
 
-    if text.strip() == "":
-        st.write("Waiting for feedback...")
-    else:
+    if words:
 
-        wc = WordCloud(
-            width=1000,
-            height=500,
-            background_color="white",
-            font_path="/home/user/.local/lib/python3.10/site-packages/wordcloud/DroidSansMono.ttf"
-        ).generate(text)
+        wordcloud = WordCloud(
+            width=800,
+            height=400,
+            background_color="white"
+        ).generate(words)
 
         fig, ax = plt.subplots()
-
-        ax.imshow(wc)
-
+        ax.imshow(wordcloud)
         ax.axis("off")
 
         st.pyplot(fig)
 
-    # ---------- AUTO REFRESH ----------
-
-    time.sleep(3)
-    st.rerun()
+    st.caption("Refresh page to update WordCloud")
