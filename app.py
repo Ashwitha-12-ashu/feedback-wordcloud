@@ -39,9 +39,16 @@ else:
 
     url = "https://feedback-wordcloud-a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
 
-    # Generate QR
-    qr = qrcode.make(url)
+    # Generate QR code
+    url = "https://feedback-wordcloud-   a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
 
+    import qrcode
+
+    qr = qrcode.make(url)
+    qr.save("qr.png")
+
+    st.subheader("Students scan this QR code")
+    st.image("qr.png", width=300)
     # Convert to array (important fix)
     qr_array = np.array(qr)
 
