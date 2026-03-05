@@ -36,14 +36,10 @@ if mode == "user":
 else:
 
     st.title("Live Seminar Feedback")
-
-    url = "https://feedback-wordcloud-a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
-
     # Generate QR code
-    url = "https://feedback-wordcloud-   a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
-
+  
     import qrcode
-
+    url ="https://feedback-wordcloud-a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
     qr = qrcode.make(url)
     qr.save("qr.png")
 
@@ -73,3 +69,6 @@ else:
         ax.axis("off")
 
         st.pyplot(fig)
+        
+        
+      
