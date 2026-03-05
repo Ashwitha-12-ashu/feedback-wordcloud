@@ -1,9 +1,9 @@
-
 import streamlit as st
 import sqlite3
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import qrcode
+from PIL import Image
 
 # Database
 conn = sqlite3.connect("feedback.db", check_same_thread=False)
@@ -16,7 +16,6 @@ text TEXT
 )
 """)
 
-# Page mode
 mode = st.query_params.get("mode")
 
 # ---------------- USER PAGE ----------------
@@ -40,11 +39,22 @@ else:
 
     url = "https://feedback-wordcloud-a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
 
-    qr = qrcode.make(url)
+    # Generate QR
+    qr = qrcode.QRCode(
+        version=1,
+        box_size=10,
+        border=5
+    )
+
+    qr.add_data(url)
+    qr.make(fit=True)
+
+    qr_img = qr.make_image(fill_color="black", back_color="white")
 
     st.subheader("Students scan this QR code")
-    st.image(qr)
+    st.image(qr_img)
 
+    # Fetch feedback
     cursor.execute("SELECT text FROM feedback")
     data = cursor.fetchall()
 
@@ -63,5 +73,3 @@ else:
         ax.axis("off")
 
         st.pyplot(fig)
-
-    st.caption("Refresh page to update WordCloud")
