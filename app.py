@@ -25,7 +25,7 @@ if mode == "user":
 
     st.title("Seminar Feedback")
 
-    feedback = st.text_area("Enter your feedback")
+    feedback = st.text_area("Enter your thought")
 
     if st.button("Submit"):
 
@@ -39,8 +39,7 @@ if mode == "user":
 # ---------- ADMIN PAGE ----------
 else:
 
-    st.title("Live Seminar Feedback")
-    st.title("Live Seminar Feedback")
+    st.title(" Live Feedback collector")
 
     if st.button("Clear All Feedback"):
         cursor.execute("DELETE FROM feedback")
@@ -56,7 +55,7 @@ else:
     qr = qrcode.make(url)
     qr.save("qr.png")
 
-    st.subheader("Students scan this QR code")
+    st.subheader("scan this QR code")
     st.image("qr.png", width=300)
 
     # fetch latest feedback every refresh
