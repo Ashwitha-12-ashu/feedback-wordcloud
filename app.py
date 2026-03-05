@@ -1,3 +1,4 @@
+
 import streamlit as st
 import sqlite3
 from wordcloud import WordCloud
@@ -5,22 +6,21 @@ import matplotlib.pyplot as plt
 import qrcode
 from streamlit_autorefresh import st_autorefresh
 
-# ---------------- DATABASE ----------------
+# ---------- DATABASE ----------
 conn = sqlite3.connect("feedback.db", check_same_thread=False)
 cursor = conn.cursor()
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS feedback(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    text TEXT
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+text TEXT
 )
 """)
 
-# ---------------- MODE ----------------
-params = st.query_params
-mode = params.get("mode")
+# ---------- CHECK MODE ----------
+mode = st.query_params.get("mode")
 
-# ---------------- USER PAGE ----------------
+# ---------- USER PAGE ----------
 if mode == "user":
 
     st.title("Seminar Feedback")
@@ -28,20 +28,23 @@ if mode == "user":
     feedback = st.text_area("Enter your feedback")
 
     if st.button("Submit"):
-        if feedback.strip() != "":
-            cursor.execute("INSERT INTO feedback(text) VALUES(?)", (feedback,))
-            conn.commit()
-            st.success("Thank you for your feedback!")
 
-# ---------------- ADMIN PAGE ----------------
+        if feedback.strip() != "":
+            cursor.execute("INSERT INTO feedback(text) VALUES(?)",(feedback,))
+            conn.commit()
+
+            st.success("Feedback submitted successfully!")
+            st.stop()
+
+# ---------- ADMIN PAGE ----------
 else:
 
     st.title("Live Seminar Feedback")
 
-    # auto refresh every 3 seconds
-    st_autorefresh(interval=3000, key="refresh")
+    # auto refresh every 2 seconds
+    st_autorefresh(interval=2000, key="datarefresh")
 
-    # correct deployed link
+    # your deployed app link
     url = "https://feedback-wordcloud-a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
 
     # generate QR
@@ -51,15 +54,16 @@ else:
     st.subheader("Students scan this QR code")
     st.image("qr.png", width=300)
 
-    # fetch feedback
+    # fetch latest feedback every refresh
     cursor.execute("SELECT text FROM feedback")
     rows = cursor.fetchall()
 
     words = " ".join([row[0] for row in rows])
 
     if words:
+
         wordcloud = WordCloud(
-            width=800,
+            width=900,
             height=400,
             background_color="white"
         ).generate(words)
@@ -69,3 +73,6 @@ else:
         ax.axis("off")
 
         st.pyplot(fig)
+
+    else:
+        st.info("Waiting for feedback...")
