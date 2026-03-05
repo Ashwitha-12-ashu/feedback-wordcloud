@@ -1,30 +1,68 @@
 
-TypeError: This app has encountered an error. The original error message is redacted to prevent data leaks. Full error details have been recorded in the logs (if you're on Streamlit Cloud, click on 'Manage app' in the lower right of your app).
-Traceback:
-File "/mount/src/feedback-wordcloud/app.py", line 55, in <module>
-    st.image(qr_img)
-    ~~~~~~~~^^^^^^^^
-File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/runtime/metrics_util.py", line 532, in wrapped_func
-    result = non_optional_func(*args, **kwargs)
-File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/elements/image.py", line 215, in image
-    marshall_images(
-    ~~~~~~~~~~~~~~~^
-        self.dg._get_delta_path_str(),
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<6 lines>...
-        output_format,
-        ^^^^^^^^^^^^^^
-    )
-    ^
-File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/elements/lib/image_utils.py", line 445, in marshall_images
-    proto_img.url = image_to_url(
-                    ~~~~~~~~~~~~^
-        single_image, layout_config, clamp, channels, output_format, image_id
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/elements/lib/image_utils.py", line 337, in image_to_url
-    image_data = _ensure_image_size_and_format(image_data, layout_config, image_format)
-File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/elements/lib/image_utils.py", line 186, in _ensure_image_size_and_format
-    pil_image: PILImage = Image.open(io.BytesIO(image_data))
-                                     ~~~~~~~~~~^^^^^^^^^^^^
+import streamlit as st
+import sqlite3
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+import qrcode
+import numpy as np
+
+# Database
+conn = sqlite3.connect("feedback.db", check_same_thread=False)
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS feedback(
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+text TEXT
+)
+""")
+
+mode = st.query_params.get("mode")
+
+# ---------------- USER PAGE ----------------
+if mode == "user":
+
+    st.title("Seminar Feedback")
+
+    feedback = st.text_area("Enter your feedback")
+
+    if st.button("Submit"):
+        if feedback.strip() != "":
+            cursor.execute("INSERT INTO feedback(text) VALUES(?)", (feedback,))
+            conn.commit()
+            st.success("Thank you for your feedback!")
+
+# ---------------- ADMIN PAGE ----------------
+else:
+
+    st.title("Live Seminar Feedback")
+
+    url = "https://feedback-wordcloud-a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
+
+    # Generate QR
+    qr = qrcode.make(url)
+
+    # Convert to array (important fix)
+    qr_array = np.array(qr)
+
+    st.subheader("Students scan this QR code")
+    st.image(qr_array)
+
+    # Fetch feedback
+    cursor.execute("SELECT text FROM feedback")
+    data = cursor.fetchall()
+
+    words = " ".join([row[0] for row in data])
+
+    if words:
+        wordcloud = WordCloud(
+            width=800,
+            height=400,
+            background_color="white"
+        ).generate(words)
+
+        fig, ax = plt.subplots()
+        ax.imshow(wordcloud)
+        ax.axis("off")
+
+        st.pyplot(fig)
