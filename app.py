@@ -40,8 +40,13 @@ if mode == "user":
 else:
 
     st.title("Live Seminar Feedback")
+    st.title("Live Seminar Feedback")
 
-    # auto refresh every 2 seconds
+    if st.button("Clear All Feedback"):
+        cursor.execute("DELETE FROM feedback")
+        conn.commit()
+        st.success("All responses cleared!")
+        # auto refresh every 2 seconds
     st_autorefresh(interval=2000, key="datarefresh")
 
     # your deployed app link
