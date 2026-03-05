@@ -1,23 +1,24 @@
-from streamlit_autorefresh import st_autorefresh
 import streamlit as st
 import sqlite3
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import qrcode
-import numpy as np
+from streamlit_autorefresh import st_autorefresh
 
-# Database
+# ---------------- DATABASE ----------------
 conn = sqlite3.connect("feedback.db", check_same_thread=False)
 cursor = conn.cursor()
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS feedback(
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-text TEXT
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    text TEXT
 )
 """)
 
-mode = st.query_params.get("mode")
+# ---------------- MODE ----------------
+params = st.query_params
+mode = params.get("mode")
 
 # ---------------- USER PAGE ----------------
 if mode == "user":
@@ -33,31 +34,35 @@ if mode == "user":
             st.success("Thank you for your feedback!")
 
 # ---------------- ADMIN PAGE ----------------
-from streamlit_autorefresh import st_autorefresh
-
 else:
 
     st.title("Live Seminar Feedback")
 
-    # Auto refresh every 3 seconds
+    # auto refresh every 3 seconds
     st_autorefresh(interval=3000, key="refresh")
 
+    # correct deployed link
     url = "https://feedback-wordcloud-a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
 
-    import qrcode
+    # generate QR
     qr = qrcode.make(url)
     qr.save("qr.png")
 
     st.subheader("Students scan this QR code")
     st.image("qr.png", width=300)
 
+    # fetch feedback
     cursor.execute("SELECT text FROM feedback")
-    data = cursor.fetchall()
+    rows = cursor.fetchall()
 
-    words = " ".join([row[0] for row in data])
+    words = " ".join([row[0] for row in rows])
 
     if words:
-        wordcloud = WordCloud(width=800, height=400, background_color="white").generate(words)
+        wordcloud = WordCloud(
+            width=800,
+            height=400,
+            background_color="white"
+        ).generate(words)
 
         fig, ax = plt.subplots()
         ax.imshow(wordcloud)
