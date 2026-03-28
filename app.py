@@ -29,7 +29,7 @@ mode = st.query_params.get("mode")
 # ---------- USER PAGE ----------
 if mode == "user":
 
-    st.title("Seminar Feedback")
+    st.title(" TECHZEON FEEDBACK")
 
     feedback = st.text_area("Enter your thought")
 
