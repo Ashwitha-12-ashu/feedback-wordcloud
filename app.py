@@ -6,8 +6,13 @@ import qrcode
 from streamlit_autorefresh import st_autorefresh
 import os
 
-# ---------------- FIX: SAFE DB PATH ----------------
-DB_PATH = os.path.join(st.experimental_user.dir(), "feedback.db")
+# ---------- FIX: CREATE SAFE FOLDER ----------
+if not os.path.exists(".st_feedback"):
+    os.makedirs(".st_feedback")
+
+DB_PATH = os.path.join(".st_feedback", "feedback.db")
+
+# ---------- DATABASE ----------
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 cursor = conn.cursor()
 
@@ -18,11 +23,12 @@ text TEXT
 )
 """)
 
-# ---------------- CHECK MODE ----------------
+# ---------- CHECK MODE ----------
 mode = st.query_params.get("mode")
 
-# ---------------- USER FEEDBACK PAGE ----------------
+# ---------- USER PAGE ----------
 if mode == "user":
+
     st.title("Seminar Feedback")
 
     feedback = st.text_area("Enter your thought")
@@ -31,29 +37,29 @@ if mode == "user":
         if feedback.strip() != "":
             cursor.execute("INSERT INTO feedback(text) VALUES(?)", (feedback,))
             conn.commit()
-
-            st.success("Feedback submitted successfully 🎉")
+            st.success("Feedback submitted successfully!")
             st.stop()
 
-# ---------------- ADMIN PAGE ----------------
+# ---------- ADMIN PAGE ----------
 else:
-    st.title("📌 Live Feedback Collector (Admin)")
+
+    st.title(" Live Feedback collector")
 
     if st.button("Clear All Feedback"):
         cursor.execute("DELETE FROM feedback")
         conn.commit()
         st.success("All responses cleared!")
 
-    st_autorefresh(interval=2000, key="data_refresh")
+    # auto refresh every 2 seconds
+    st_autorefresh(interval=2000, key="datarefresh")
 
-    # your live Streamlit URL
     url = "https://feedback-wordcloud-a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
 
-    # Generate QR Code
+    # generate QR
     qr = qrcode.make(url)
     qr.save("qr.png")
 
-    st.subheader("📱 Scan this QR to Submit Feedback")
+    st.subheader("Scan this QR Code")
     st.image("qr.png", width=300)
 
     cursor.execute("SELECT text FROM feedback")
@@ -61,7 +67,7 @@ else:
 
     words = " ".join([row[0] for row in rows])
 
-    if words.strip() != "":
+    if words.strip():
         wordcloud = WordCloud(
             width=900,
             height=400,
