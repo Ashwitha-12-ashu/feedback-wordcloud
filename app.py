@@ -4,92 +4,75 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import qrcode
 from streamlit_autorefresh import st_autorefresh
-import os
 
-# ---------- DATABASE ----------
+# ---------------- DATABASE ----------------
 conn = sqlite3.connect("feedback.db", check_same_thread=False)
 cursor = conn.cursor()
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS feedback(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    text TEXT
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+text TEXT
 )
 """)
 
-# ---------- CHECK MODE ----------
+# ---------------- CHECK MODE ----------------
 mode = st.query_params.get("mode")
 
-# ---------- USER PAGE ----------
+# ---------------- USER FEEDBACK PAGE ----------------
 if mode == "user":
-
-    st.title("Feedback Scanner")
+    st.title("Seminar Feedback")
 
     feedback = st.text_area("Enter your thought")
 
     if st.button("Submit"):
         if feedback.strip() != "":
-            cursor.execute("INSERT INTO feedback(text) VALUES(?)", (feedback.strip(),))
+            cursor.execute("INSERT INTO feedback(text) VALUES(?)", (feedback,))
             conn.commit()
-            st.success("Feedback submitted successfully!")
+
+            st.success("Feedback submitted successfully 🎉")
             st.stop()
-        else:
-            st.warning("Please enter something before submitting.")
 
-# ---------- ADMIN PAGE ----------
+# ---------------- ADMIN PAGE ----------------
 else:
+    st.title("📌 Live Feedback Collector (Admin)")
 
-    st.title("📡 Live Feedback Collector")
-
-    # Clear button
-    if st.button("🗑 Clear All Feedback"):
+    if st.button("Clear All Feedback"):
         cursor.execute("DELETE FROM feedback")
         conn.commit()
         st.success("All responses cleared!")
 
-    # Auto refresh every 2 sec
-    st_autorefresh(interval=2000, key="datarefresh")
+    # auto-refresh every 2 sec
+    st_autorefresh(interval=2000, key="data_refresh")
 
-    # your deployed app link
-    url = "https://feedback-wordcloud-a9rveucbs5d38u8cbvr74d.streamlit.app/?mode=user"
+    # your LIVE Streamlit URL (IMPORTANT)
+    url = "https://feedback-wordcloud-a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
 
-    # ---------- QR CODE ----------
-    qr_path = "qr.png"
-    if not os.path.exists(qr_path):
-        qr = qrcode.make(url)
-        qr.save(qr_path)
+    # Generate QR Code
+    qr = qrcode.make(url)
+    qr.save("qr.png")
 
-    st.subheader("📱 Scan this QR to Submit Feedback")
-    st.image(qr_path, width=250)
+    st.subheader("📱 Scan this to Submit Feedback")
+    st.image("qr.png", width=300)
 
-    # ---------- FETCH FEEDBACK ----------
+    # Fetch all feedback
     cursor.execute("SELECT text FROM feedback")
     rows = cursor.fetchall()
 
-    # join all feedback
-    words = " ".join([row[0] for row in rows if row[0].strip() != ""]).strip()
+    words = " ".join([row[0] for row in rows])
 
-    st.markdown("---")
+    if words.strip() != "":
+        wordcloud = WordCloud(
+            width=900,
+            height=400,
+            background_color="white"
+        ).generate(words)
 
-    # ---------- DISPLAY WORDCLOUD OR MESSAGE ----------
-    if len(rows) == 0:
-        st.info("No feedback received yet... Waiting!")
-    elif words == "":
-        st.info("Feedback exists but contains empty text only.")
+        fig, ax = plt.subplots()
+        ax.imshow(wordcloud)
+        ax.axis("off")
+
+        st.pyplot(fig)
+
     else:
-        try:
-            wordcloud = WordCloud(
-                width=900,
-                height=400,
-                background_color="white"
-            ).generate(words)
-
-            fig, ax = plt.subplots()
-            ax.imshow(wordcloud)
-            ax.axis("off")
-
-            st.pyplot(fig)
-
-        except Exception as e:
-            st.error(f"Error generating word cloud: {e}")
-            st.write("Raw words:", words)
+        st.info("Waiting for feedback...")
