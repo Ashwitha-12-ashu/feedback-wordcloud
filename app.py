@@ -4,9 +4,11 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import qrcode
 from streamlit_autorefresh import st_autorefresh
+import os
 
-# ---------------- DATABASE ----------------
-conn = sqlite3.connect("feedback.db", check_same_thread=False)
+# ---------------- FIX: SAFE DB PATH ----------------
+DB_PATH = os.path.join(st.experimental_user.dir(), "feedback.db")
+conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 cursor = conn.cursor()
 
 cursor.execute("""
@@ -42,20 +44,18 @@ else:
         conn.commit()
         st.success("All responses cleared!")
 
-    # auto-refresh every 2 sec
     st_autorefresh(interval=2000, key="data_refresh")
 
-    # your LIVE Streamlit URL (IMPORTANT)
+    # your live Streamlit URL
     url = "https://feedback-wordcloud-a9rveucbs5d38u2cbvr74d.streamlit.app/?mode=user"
 
     # Generate QR Code
     qr = qrcode.make(url)
     qr.save("qr.png")
 
-    st.subheader("📱 Scan this to Submit Feedback")
+    st.subheader("📱 Scan this QR to Submit Feedback")
     st.image("qr.png", width=300)
 
-    # Fetch all feedback
     cursor.execute("SELECT text FROM feedback")
     rows = cursor.fetchall()
 
